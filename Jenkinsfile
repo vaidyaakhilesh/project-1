@@ -24,8 +24,7 @@ pipeline {
         stage('Login to Amazon ECR') {
             steps {
                 sh '''
-                aws ecr get-login-password --region $AWS_REGION | \
-                docker login --username AWS --password-stdin 105673812211.dkr.ecr.ap-southeast-2.amazonaws.com
+                aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin 105673812211.dkr.ecr.ap-southeast-2.amazonaws.com
                 '''
             }
         }
@@ -36,6 +35,17 @@ pipeline {
                 docker tag sample-app:v1 $ECR_REPO:$IMAGE_TAG
                 docker push $ECR_REPO:$IMAGE_TAG
                 '''
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
+                    sh '''
+                    kubectl apply -f deployment.yaml
+                    kubectl apply -f service.yaml
+                    '''
+                }
             }
         }
     }
